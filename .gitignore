@@ -1,0 +1,9 @@
+*.iml
+
+/chain/artifacts/
+/chain/deployments/
+/chain/cache/
+/chain/node_modules/
+/chain/typechain-types/
+/chain/package-lock.json
+
