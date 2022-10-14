@@ -2,9 +2,11 @@ const { decryptEth } = require("../util")
 
 task("4-get-auth-request", "Receive the latest AuthRequest message for PGBP")
     .addParam("contract", "The PGBP contract address")
+    .addParam("account", "The payer's account address which initiated the flow (used for filtering)")
     .setAction(async (taskArgs) => {
 
     const contractAddr = taskArgs.contract
+    const account = taskArgs.account
     const networkId = network.name
 
     console.log("Listening for AuthRequest for PGBP (contract", contractAddr, ") on network", networkId)
@@ -28,14 +30,11 @@ task("4-get-auth-request", "Receive the latest AuthRequest message for PGBP")
     console.log("AuthRequest received");
     console.log("\tRequestId", event.requestId);
     console.log("\tRequester", event.requester);
-    console.log("\tEncr. data", ethers.utils.toUtf8String(event.encryptedData));
+    console.log("\tEncr. data", ethers.utils.toUtf8String(event.authEncryptedData));
 
-    const decryptedData = await decryptEth(signer.privateKey, ethers.utils.toUtf8String(event.encryptedData))
-    // doing something really silly to need double JSON parsing; should have been obvious but isn't...
-    const rawData = JSON.parse(JSON.parse(decryptedData))
+    const decryptedData = await decryptEth(signer.privateKey, ethers.utils.toUtf8String(event.authEncryptedData))
+    const rawData = JSON.parse(decryptedData)
 
-    const requester = event.requester
-    const amount = ethers.utils.formatEther(event.amount)
     const url = rawData.url
 
     console.log("--------------------------------------------------")

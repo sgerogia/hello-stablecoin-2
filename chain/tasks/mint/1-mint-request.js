@@ -1,4 +1,4 @@
-const { encryptEth } = require("../util")
+const { encryptEth, getEncryptionKey } = require("../util")
 
 task("1-mint-request", "Triggers a mintRequest for PGBP")
   .addParam("contract", "The PGBP contract address")
@@ -27,16 +27,23 @@ task("1-mint-request", "Triggers a mintRequest for PGBP")
     //Create connection to Contract and call the getter function
     const gbpContract = new ethers.Contract(contractAddr, ProvableGBP.interface, signer)
 
-    // Get contract owner's public key
-    const serverPubKey = await gbpContract.publicKey()
+    // Get contract owner's public encryption key
+    const serverPubKey = ethers.utils.toUtf8String(await gbpContract.publicKey())
+//    console.log("Server pub. key", serverPubKey)
+
+    // Get our own public encryption key
+    const myPubKey = getEncryptionKey(privateKey)
 
     const payload = {
         institutionId: institutionId,
         sortCode: sortCode,
         accountNumber: accountNumber,
-        name: name
+        name: name,
+        publicKey: myPubKey
     }
-    const encryptedData = await encryptEth(serverPubKey, JSON.stringify(payload))
+    const encryptedData = await encryptEth(serverPubKey, payload)
+
+    console.log("Encrypted data", encryptedData)
 
     await gbpContract.mintRequest(ethers.utils.parseEther(amount), ethers.utils.toUtf8Bytes(encryptedData))
     console.log("Done")
