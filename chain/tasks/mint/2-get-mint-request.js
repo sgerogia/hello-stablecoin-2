@@ -2,7 +2,7 @@ const { decryptEth } = require("../util")
 
 task("2-get-mint-request", "Receive the latest MintRequest message for PGBP")
     .addParam("contract", "The PGBP contract address")
-    .addParam("account", "The account address which sent the message (used for filtering)")
+    .addParam("account", "The payer's account address which initiated the flow (used for filtering)")
     .setAction(async (taskArgs) => {
 
     const contractAddr = taskArgs.contract
@@ -35,8 +35,7 @@ task("2-get-mint-request", "Receive the latest MintRequest message for PGBP")
     console.log("\tEncr. data", ethers.utils.toUtf8String(event.encryptedData));
 
     const decryptedData = await decryptEth(signer.privateKey, ethers.utils.toUtf8String(event.encryptedData))
-    // doing something really silly to need double JSON parsing; should have been obvious but isn't...
-    const rawData = JSON.parse(JSON.parse(decryptedData))
+    const rawData = JSON.parse(decryptedData)
 
     const requester = event.requester
     const amount = ethers.utils.formatEther(event.amount)
@@ -44,6 +43,16 @@ task("2-get-mint-request", "Receive the latest MintRequest message for PGBP")
     const name = rawData.name
     const sortCode = rawData.sortCode
     const accountNumber = rawData.accountNumber
+    const publicKey = rawData.publicKey
+
+    console.log("--------------------------------------------------")
+    console.log("MintRequest encr. payload");
+    console.log("\tInstitutionId", institutionId);
+    console.log("\tSort code", sortCode);
+    console.log("\tAcc. number", accountNumber);
+    console.log("\tName", name);
+    console.log("\tPublic key", publicKey);
+
 
     console.log("--------------------------------------------------")
     console.log("Use the following to create a consent\n")

@@ -1,49 +1,75 @@
 const { ethers } = require("ethers");
-const EthCrypto = require('eth-crypto');
+const { encrypt, decrypt } = require('@metamask/eth-sig-util');
 const { stripHexPrefix } = require('ethereumjs-util');
+const { getEncryptionPublicKey } = require("@metamask/eth-sig-util")
 
-const encryptEth = async (publicKey, data) => {
-    const pKey = stripHexPrefix(publicKey).slice(2);
+const ALGO = 'x25519-xsalsa20-poly1305';
 
-    const encr = await EthCrypto.encryptWithPublicKey(pKey, JSON.stringify(data));
-    return JSON.stringify(encr);
+/*
+ * Performs the encryption using eth-sig-util.encrypt.
+ * @param publicKey a key in hex (0x...) or base64
+ * @param dataStructToEncrypt an object, which will be converted to JSON and encrypted
+ */
+const encryptEth = async (publicKey, dataStructToEncrypt) => {
+
+    const pKey = publicKey.startsWith('0x')
+            ? Buffer.from(stripHexPrefix(publicKey), 'hex').toString('base64')
+            : publicKey;
+
+    const dataToEncrypt = JSON.stringify(dataStructToEncrypt);
+
+    const encr = JSON.stringify(
+        encrypt({
+            publicKey: pKey,
+            data: dataToEncrypt,
+            version: ALGO,
+        })
+    );
+    return encr;
 }
 
+/*
+ * Performs the decryption using the private key.
+ * @param privateKey in hex (0x...) or base64 format
+ * @param encrData a string representation of the eth-sig-util data structure
+ * {
+ *   version: 'x25519-xsalsa20-poly1305',
+ *   nonce: <base64>,
+ *   ephemPublicKey: <base64>,
+ *   ciphertext: <base64>
+ * }
+ */
 const decryptEth = async (privateKey, encrData) => {
-    const encr = JSON.parse(encrData);
-    const decr = await EthCrypto.decryptWithPrivateKey(privateKey, encr);
+
+    const data = stripHexPrefix(encrData);
+    const encrJson = JSON.parse(encrData);
+
+    const pKey = privateKey.startsWith('0x')
+            ? stripHexPrefix(privateKey)
+            : Buffer.from(privateKey, 'base64').toString('hex');
+
+    const decr = await decrypt({
+        encryptedData: encrJson,
+        privateKey: pKey,
+    });
     return decr;
 }
 
-// Recover the public key of the sender given a transaction.
-const recoverPublicKey = async (trx) => {
+/*
+ * Utility wrapper around eth-sig-util.getEncryptionPublicKey. Takes care of key format conversions.
+ * @param privateKey in hex or base64 format
+ */
+const getEncryptionKey = (privateKey) => {
 
-    const expandedSig = {
-      r: trx.r,
-      s: trx.s,
-      v: trx.v
-    }
-    const signature = ethers.utils.joinSignature(expandedSig)
-    const txData = {
-      gasPrice: trx.gasPrice,
-      gasLimit: trx.gasLimit,
-      value: trx.value,
-      nonce: trx.nonce,
-      data: trx.data,
-      chainId: trx.chainId,
-      to: trx.to // you might need to include this if it's a regular tx and not simply a contract deployment
-    }
-    const rsTx = await ethers.utils.resolveProperties(txData)
-    const raw = ethers.utils.serializeTransaction(rsTx) // returns RLP encoded tx
-    const msgHash = ethers.utils.keccak256(raw) // as specified by ECDSA
-    const msgBytes = ethers.utils.arrayify(msgHash) // create binary hash
-    const recoveredPubKey = ethers.utils.recoverPublicKey(msgBytes, signature)
+    const pKey = privateKey.startsWith('0x')
+            ? stripHexPrefix(privateKey)
+            : Buffer.from(privateKey, 'base64').toString('hex');
 
-    return recoveredPubKey
+    return getEncryptionPublicKey(pKey);
 }
 
 module.exports = {
     encryptEth,
     decryptEth,
-    recoverPublicKey,
+    getEncryptionKey
 }
