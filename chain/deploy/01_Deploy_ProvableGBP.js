@@ -10,6 +10,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const deployer = new ethers.Wallet(process.env.PRIVATE_KEY, ethers.provider);
 
   const args = [ ethers.utils.toUtf8Bytes(getEncryptionKey(process.env.PRIVATE_KEY)) ]
+
+  console.log("Public key", args[0])
+
   const gbp = await deploy("ProvableGBP", {
     from: deployer.address,
     args: args,

@@ -1,0 +1,21 @@
+Title = "Example TPP client configuration"
+
+[BankClient]
+ClientId = "bySKlugNxE-JJf7roqCwgxqBisD-j6IU_cN1qhViMuY="
+ClientSecret = "QJaOQ7glVL1TkRYaZ6f5XfV4PxElOzjOJaiYKZTnLiE="
+RedirectUrl = "https://display-parameters.com/"
+
+[Ethereum]
+ProviderUrl = "wss://goerli.infura.io/ws/v3/8381b69184e54ff38ee0a1ebb60e8e63"
+ContractAddress = "0xc260482e1bab0fa28de4e41c49fee8c5ccf5ac5b"
+ChainId = 80001
+MaxGas = 300000 # Must be >21k. Too high value will cause "exceeds block gas limit"
+
+[Tuning]
+CronSchedule = 5
+BankClientTimeout = 30
+
+[BankAccount]
+SortCode = "500000"
+AccountNumber = "87654301"
+AccountName = "ProvableGBP Limited"

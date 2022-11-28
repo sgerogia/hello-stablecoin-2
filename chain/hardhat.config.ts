@@ -2,12 +2,19 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
+import "@solidstate/hardhat-bytecode-exporter";
 import "./tasks"
 
 // Infura API
 const API_KEY = process.env.INFURA_TOKEN
+// ETH
 const MAINNET_RPC_URL = "https://mainnet.infura.io/v3/" + API_KEY
 const GOERLI_RPC_URL = "https://goerli.infura.io/v3/" + API_KEY
+const SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/" + API_KEY
+// Polygon
+const MUMBAI_RPC_URL = "https://matic-mumbai.chainstacklabs.com"
+const MATIC_RPC_URL = "https://matic-mainnet.chainstacklabs.com"
+
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 // optional
@@ -35,7 +42,29 @@ const config: HardhatUserConfig = {
             url: "http://127.0.0.1:8545",
             chainId: 1337,
         },
-        goerli: {
+
+        // Polygon live networks
+        mumbai: { // testnet
+            url: MUMBAI_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            //   accounts: {
+            //     mnemonic: MNEMONIC,
+            //   },
+            saveDeployments: true,
+            chainId: 80001,
+        },
+        matic: { // mainnet
+            url: MATIC_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            //   accounts: {
+            //     mnemonic: MNEMONIC,
+            //   },
+            saveDeployments: true,
+            chainId: 137,
+        },
+
+        // Ethereum live networks
+        goerli: { // testnet
             url: GOERLI_RPC_URL,
             accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
             //   accounts: {
@@ -43,8 +72,21 @@ const config: HardhatUserConfig = {
             //   },
             saveDeployments: true,
             chainId: 5,
-            gas: 6000000,
-            gasPrice: 20000000000,
+            //gas: 2000000,
+            //gasPrice: 20000000000, // affects how quickly (if at all) the trx goes in. Needs fine-tuning for mainnet
+            //gasMultiplier: 1.4
+        },
+        sepolia: { // testnet
+            url: SEPOLIA_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            //   accounts: {
+            //     mnemonic: MNEMONIC,
+            //   },
+            saveDeployments: true,
+            chainId: 11155111,
+            //gas: 2000000,
+            //gasPrice: 20000000000, // affects how quickly (if at all) the trx goes in. Needs fine-tuning for mainnet
+            //gasMultiplier: 1.4
         },
         mainnet: {
             url: MAINNET_RPC_URL,
@@ -85,6 +127,12 @@ const config: HardhatUserConfig = {
     },
     solidity: "0.8.17",
 
+    bytecodeExporter: {
+      path: './artifacts/contracts',
+      runOnCompile: true,
+      clear: true,
+      flat: true,
+    }
 };
 
 export default config;

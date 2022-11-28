@@ -1,12 +1,16 @@
 package encrypt
 
 import (
-	"crypto/ed25519"
+	"crypto/ecdsa"
 	"crypto/rand"
 	b64 "encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto"
+	"golang.org/x/crypto/curve25519"
 	"io"
+	"strings"
 
 	"golang.org/x/crypto/nacl/box"
 )
@@ -19,22 +23,66 @@ import (
 const VERSION = "x25519-xsalsa20-poly1305"
 
 type KeyPair struct {
-	PrivateKey ed25519.PrivateKey
-	PublicKey  ed25519.PublicKey
+	PublicEncrKey []byte
+	PrivateKey    *ecdsa.PrivateKey
+	PublicKey     *ecdsa.PublicKey
 }
 
-func NewKeyPair(privKey []byte) *KeyPair {
+func NewKeyPairFromHex(privKey string) (*KeyPair, error) {
 
-	return &KeyPair{PrivateKey: privKey, PublicKey: ed25519.PrivateKey(privKey).Public().(ed25519.PublicKey)}
+	if strings.HasPrefix(privKey, "0x") {
+		privKey = privKey[2:]
+	}
+
+	raw, err := hex.DecodeString(privKey)
+	if err != nil {
+		return nil, errors.New("Error decoding hex string")
+	}
+
+	pubEncrKey, err := curve25519.X25519(raw[:], curve25519.Basepoint)
+	if err != nil {
+		return nil, errors.New("Error generating public encryption key")
+	}
+
+	priv, err := crypto.HexToECDSA(privKey)
+	if err != nil {
+		return nil, errors.New("Error decoding private key")
+	}
+	return &KeyPair{
+		PublicEncrKey: pubEncrKey,
+		PrivateKey:    priv,
+		PublicKey:     &priv.PublicKey}, nil
 }
 
-// EncryptWithTheirPublicKey Encrypts a given message using the counter-party's public key.
-func (keyPair *KeyPair) Encrypt(msg []byte, theirPublicKey *[32]byte) (*EthSigUtilBox, error) {
+func NewKeyPair() (*KeyPair, error) {
+	var random [32]byte
+	if _, err := io.ReadFull(rand.Reader, random[:]); err != nil {
+		return nil, err
+	}
 
-	// create ephemeral key pair
-	ephemPubKey, ephemPrivKey, err := box.GenerateKey(rand.Reader)
+	encrPubKey, err := curve25519.X25519(random[:], curve25519.Basepoint)
+	if err != nil {
+		return nil, errors.New("Error generating public encryption key")
+	}
+
+	signPrivKey, err := crypto.ToECDSA(random[:])
+	signPubKey := &signPrivKey.PublicKey
 	if err != nil {
 		return nil, err
+	}
+	return &KeyPair{
+		PublicEncrKey: encrPubKey,
+		PrivateKey:    signPrivKey,
+		PublicKey:     signPubKey}, nil
+}
+
+// Encrypt a given message using the counter-party's public key.
+func (keyPair *KeyPair) Encrypt(msg []byte, theirPublicKey *[32]byte) (*EthSigUtilBox, error) {
+
+	// Generate an ephemeral keypair
+	ephemPubKey, ephemPrivKey, err := box.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, errors.New("Error generating ephemeral keypair")
 	}
 
 	// create random nonce
@@ -54,15 +102,27 @@ func (keyPair *KeyPair) Encrypt(msg []byte, theirPublicKey *[32]byte) (*EthSigUt
 	}, nil
 }
 
-// DecryptWithOurPrivateKey Takes an incoming EthSigUtilBox and decrypts the cipher text, using our private key.
+// Decrypt Takes an incoming EthSigUtilBox and decrypts the cipher text, using our private key.
 func (keyPair *KeyPair) Decrypt(payload *EthSigUtilBox) ([]byte, error) {
 
 	var msg []byte
-	msg, ok := box.Open(msg, *payload.Ciphertext, payload.Nonce, payload.EphemPublicKey, (*[32]byte)(keyPair.PrivateKey))
+	msg, ok := box.Open(msg, *payload.Ciphertext, payload.Nonce, payload.EphemPublicKey, keyPair.PrivateKeyBytes())
 	if !ok {
 		return nil, errors.New("Error decrypting")
 	}
 	return msg, nil
+}
+
+func (keyPair *KeyPair) PublicKeyBytes() *[32]byte {
+	return (*[32]byte)(crypto.FromECDSAPub(keyPair.PublicKey))
+}
+
+func (keyPair *KeyPair) PrivateKeyBytes() *[32]byte {
+	return (*[32]byte)(crypto.FromECDSA(keyPair.PrivateKey))
+}
+
+func (keyPair *KeyPair) PublicEncrKeyBytes() *[32]byte {
+	return (*[32]byte)(keyPair.PublicEncrKey)
 }
 
 // The Go representation of the output of eth-sig-util.encrypt. Used in unmarshalling.

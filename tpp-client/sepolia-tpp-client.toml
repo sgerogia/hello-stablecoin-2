@@ -1,0 +1,21 @@
+Title = "Example TPP client configuration"
+
+[BankClient]
+ClientId = "bySKlugNxE-JJf7roqCwgxqBisD-j6IU_cN1qhViMuY="
+ClientSecret = "QJaOQ7glVL1TkRYaZ6f5XfV4PxElOzjOJaiYKZTnLiE="
+RedirectUrl = "https://display-parameters.com/"
+
+[Ethereum]
+ProviderUrl = "wss://sepolia.infura.io/ws/v3/8381b69184e54ff38ee0a1ebb60e8e63"
+ContractAddress = "0x8b2a9ae80BBb3C187c87Cf83A75dD3c7cc2bA107"
+ChainId = 11155111
+MaxGas = 300000 # Must be >21k. Too high value will cause "exceeds block gas limit"
+
+[Tuning]
+CronSchedule = 5
+BankClientTimeout = 30
+
+[BankAccount]
+SortCode = "500000"
+AccountNumber = "87654301"
+AccountName = "ProvableGBP Limited"

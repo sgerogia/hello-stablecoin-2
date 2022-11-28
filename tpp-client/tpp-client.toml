@@ -1,0 +1,21 @@
+Title = "Example TPP client configuration"
+
+[BankClient]
+ClientId = "XYZ"
+ClientSecret = "ABC"
+RedirectUrl = "http://localhost:8080/callback"
+
+[Ethereum]
+ProviderUrl = "ws://localhost:8545"
+ContractAddress = "0x1234567890123456789012345678901234567890"
+ChainId = 1337
+MaxGas = 300000 # Must be >21k. Too high value will cause "exceeds block gas limit"
+
+[Tuning]
+CronSchedule = 5
+BankClientTimeout = 30
+
+[BankAccount]
+SortCode = "500000"
+AccountNumber = "87654301"
+AccountName = "ProvableGBP Limited"

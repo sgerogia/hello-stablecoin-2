@@ -24,9 +24,11 @@ task("2-get-mint-request", "Receive the latest MintRequest message for PGBP")
     if (events.length == 0) {
         console.log("No MintRequest events yet. Try again in a few minutes...")
         return
+    } else {
+        console.log("Found", events.length, "MintRequest events. Showing the last one.")
     }
 
-    const event = events[0].args
+    const event = events[events.length-1].args
     console.log("MintRequest received");
     console.log("\tRequestId", event.requestId);
     console.log("\tRequester", event.requester);

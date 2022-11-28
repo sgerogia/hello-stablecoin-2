@@ -4,6 +4,7 @@
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@openzeppelin/contracts": "^4.7.3",
+    "@solidstate/hardhat-bytecode-exporter": "^1.1.1",
     "buffer": "^6.0.3",
     "ecdh": "^0.1.1",
     "hardhat": "^2.11.2",

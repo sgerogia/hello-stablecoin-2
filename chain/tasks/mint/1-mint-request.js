@@ -45,8 +45,8 @@ task("1-mint-request", "Triggers a mintRequest for PGBP")
 
     console.log("Encrypted data", encryptedData)
 
-    await gbpContract.mintRequest(ethers.utils.parseEther(amount), ethers.utils.toUtf8Bytes(encryptedData))
-    console.log("Done")
+    const trx = await gbpContract.mintRequest(ethers.utils.parseEther(amount), ethers.utils.toUtf8Bytes(encryptedData))
+    console.log("Done. Trx:", trx.hash)
   })
 
 module.exports = {}

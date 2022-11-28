@@ -1,9 +1,8 @@
 package encrypt_test
 
 import (
-	"encoding/hex"
 	"encoding/json"
-	"github.com/sgerogia/hello-stablecoin/tpp-client/encrypt"
+	"github.com/sgerogia/hello-stablecoin-2/tpp-client/encrypt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -26,9 +25,8 @@ func TestKeyPair_Decrypt(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(data), &eth))
 	// ...private key
 	key := "13b7285298fd5115015d69f190146a7b9347801127841d4de9bb93b358a6b620"
-	tmp, err := hex.DecodeString(key)
+	keyPair, err := encrypt.NewKeyPairFromHex(key)
 	require.NoError(t, err)
-	keyPair := encrypt.NewKeyPair(tmp)
 
 	// act
 	res, err := keyPair.Decrypt(&eth)
@@ -40,16 +38,12 @@ func TestKeyPair_Decrypt(t *testing.T) {
 
 func TestCrypto_Encrypt(t *testing.T) {
 	// arrange
-	// ...their key
 	theirKey := "55635c799aebb4ef0ce8776e82d6fc26db2b7f936a7a521777f465466236f598"
-	tmp, err := hex.DecodeString(theirKey)
+	theirKeyPair, err := encrypt.NewKeyPairFromHex(theirKey)
 	require.NoError(t, err)
-	theirKeyPair := encrypt.NewKeyPair(tmp)
-	// ...our key
 	ourKey := "13b7285298fd5115015d69f190146a7b9347801127841d4de9bb93b358a6b620"
-	tmp2, err := hex.DecodeString(ourKey)
+	ourKeyPair, err := encrypt.NewKeyPairFromHex(ourKey)
 	require.NoError(t, err)
-	ourKeyPair := encrypt.NewKeyPair(tmp2)
 	// ...data to encrypt
 	data := TestData{
 		Field1: "Hello world",
@@ -59,7 +53,7 @@ func TestCrypto_Encrypt(t *testing.T) {
 	dataStr, _ := json.Marshal(data)
 
 	// act
-	encr, err := ourKeyPair.Encrypt(dataStr, (*[32]byte)(theirKeyPair.PublicKey))
+	encr, err := ourKeyPair.Encrypt(dataStr, theirKeyPair.PublicEncrKeyBytes())
 
 	// assert
 	require.NoError(t, err)
@@ -69,8 +63,9 @@ func TestCrypto_Encrypt(t *testing.T) {
 	require.NotEmpty(t, encr.EphemPublicKey)
 	require.NotEmpty(t, encr.Ciphertext)
 
+	// FIXME: The following assertion fails. Why?
 	// ...and verify decryption compatibility
-	//decr, err := theirKeyPair.Decrypt(encr)
-	//require.NoError(t, err)
-	//assert.Equal(t, dataStr, string(decr))
+	decr, err := theirKeyPair.Decrypt(encr)
+	require.NoError(t, err)
+	assert.Equal(t, string(dataStr), string(decr))
 }
